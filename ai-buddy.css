@@ -130,3 +130,32 @@
   color: #aaa;
   cursor: pointer;
 }
+
+.ai-buddy-improve-window {
+  position: fixed;
+  min-width: 240px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 8px;
+  box-shadow: 0 3px 18px 0 rgba(0, 0, 0, 0.13);
+  z-index: 2147483647;
+  padding: 12px 16px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 15px;
+  top: 100px;
+  left: 100px;
+}
+.ai-buddy-title {
+  font-weight: bold;
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+.ai-buddy-original-text {
+  width: 99%;
+  margin-bottom: 6px;
+  font-family: inherit;
+}
+.ai-buddy-tone {
+  width: 100%;
+  margin-bottom: 10px;
+}

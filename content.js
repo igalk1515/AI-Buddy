@@ -10,9 +10,9 @@ function injectAIBuddyCSS() {
 }
 injectAIBuddyCSS();
 
+// --- Highlight to Summarize ---
 let aiButton;
 
-// --- Highlight to Summarize ---
 document.addEventListener('mouseup', (e) => {
   if (
     (aiButton && e.target === aiButton) ||
@@ -186,7 +186,7 @@ function showAIBuddyInputIcon(inputEl) {
   aiBuddyInputIcon.alt = 'AI Buddy';
   aiBuddyInputIcon.title = 'Improve my writing';
   aiBuddyInputIcon.className = 'ai-buddy-input-icon';
-  aiBuddyInputIcon.style.left = `${rect.right - 32}px`;
+  aiBuddyInputIcon.style.left = `${rect.left - 32}px`;
   aiBuddyInputIcon.style.top = `${rect.bottom - 32}px`;
 
   aiBuddyInputIcon.onclick = (ev) => {
@@ -205,27 +205,59 @@ function removeAIBuddyInputIcon() {
   lastInputElement = null;
 }
 
+// -- THE CORRECT VERSION: Includes textarea and tone selector! --
 function showAIBuddyImproveWindow(inputEl, iconEl) {
-  // Remove previous window
   const old = document.getElementById('ai-buddy-improve-window');
   if (old) old.remove();
+
   const rect = iconEl.getBoundingClientRect();
+  const origText = inputEl.value || inputEl.innerText || '';
+
   const win = document.createElement('div');
   win.id = 'ai-buddy-improve-window';
   win.className = 'ai-buddy-improve-window';
   win.style.left = `${rect.left - 10}px`;
   win.style.top = `${rect.top - 60}px`;
+
   win.innerHTML = `
     <div class="ai-buddy-title">AI Buddy</div>
-    <button id="ai-buddy-improve-btn" class="ai-buddy-improve-btn">✍️ Improve my writing</button>
-    <button id="ai-buddy-close-btn" class="ai-buddy-close-btn">❌</button>
+    <textarea class="ai-buddy-original-text" rows="5" style="width:99%;">${origText}</textarea>
+    <label for="ai-buddy-tone" style="display:block;margin-top:6px;">Tone:</label>
+    <select id="ai-buddy-tone" class="ai-buddy-tone" style="margin-bottom:8px;">
+      <option value="default">Default</option>
+      <option value="formal">Formal</option>
+      <option value="friendly">Friendly</option>
+      <option value="concise">Concise</option>
+      <option value="detailed">Detailed</option>
+    </select>
+    <div style="margin-top:10px;">
+      <button id="ai-buddy-improve-btn">✍️ Improve</button>
+      <button id="ai-buddy-close-btn">❌ Cancel</button>
+    </div>
   `;
+
   document.body.appendChild(win);
 
   win.querySelector('#ai-buddy-improve-btn').onclick = () => {
-    const text = inputEl.value || inputEl.innerText || '';
-    alert('Would send for improvement:\n\n' + text);
-    // Replace alert with actual backend logic if needed
+    const text = win.querySelector('.ai-buddy-original-text').value;
+    const tone = win.querySelector('.ai-buddy-tone').value;
+    // For now: just alert! Later: send to backend
+    alert(
+      JSON.stringify(
+        {
+          action: 'improve',
+          text,
+          tone,
+          url: window.location.href,
+          hostname: window.location.hostname,
+          title: document.title,
+        },
+        null,
+        2
+      )
+    );
+    win.remove();
   };
+
   win.querySelector('#ai-buddy-close-btn').onclick = () => win.remove();
 }
