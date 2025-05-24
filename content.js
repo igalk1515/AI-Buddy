@@ -205,7 +205,6 @@ function removeAIBuddyInputIcon() {
   lastInputElement = null;
 }
 
-// -- THE CORRECT VERSION: Includes textarea and tone selector! --
 function showAIBuddyImproveWindow(inputEl, iconEl) {
   const old = document.getElementById('ai-buddy-improve-window');
   if (old) old.remove();
@@ -216,19 +215,20 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
   const win = document.createElement('div');
   win.id = 'ai-buddy-improve-window';
   win.className = 'ai-buddy-improve-window';
-  win.style.left = `${rect.left - 10}px`;
-  win.style.top = `${rect.top - 60}px`;
+  win.style.position = 'fixed';
+  win.style.left = '-1000px'; // offscreen for measuring
+  win.style.top = '-1000px';
 
   win.innerHTML = `
-    <div class="ai-buddy-title">AI Buddy</div>
+    <div class="ai-buddy-title" style="cursor: move;">AI Buddy</div>
     <textarea class="ai-buddy-original-text" rows="5" style="width:99%;">${origText}</textarea>
     <label for="ai-buddy-tone" style="display:block;margin-top:6px;">Tone:</label>
     <select id="ai-buddy-tone" class="ai-buddy-tone" style="margin-bottom:8px;">
-      <option value="default">Default</option>
-      <option value="formal">Formal</option>
-      <option value="friendly">Friendly</option>
-      <option value="concise">Concise</option>
-      <option value="detailed">Detailed</option>
+      <option value="default">📝 Default</option>
+      <option value="formal">🎩 Formal</option>
+      <option value="friendly">😊 Friendly</option>
+      <option value="concise">✂️ Concise</option>
+      <option value="detailed">📚 Detailed</option>
     </select>
     <div style="margin-top:10px;">
       <button id="ai-buddy-improve-btn">✍️ Improve</button>
@@ -238,10 +238,62 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
 
   document.body.appendChild(win);
 
+  // --- Now get real width/height ---
+  const winRect = win.getBoundingClientRect();
+
+  // Preferred position: to the right of icon, below
+  let left = rect.right + 12;
+  let top = rect.top;
+
+  // Adjust if overflow (right, bottom)
+  if (left + winRect.width > window.innerWidth)
+    left = window.innerWidth - winRect.width - 8;
+  if (top + winRect.height > window.innerHeight)
+    top = window.innerHeight - winRect.height - 8;
+  if (left < 0) left = 8;
+  if (top < 0) top = 8;
+
+  win.style.left = `${left}px`;
+  win.style.top = `${top}px`;
+
+  // DRAGGABLE LOGIC (same as before)
+  let isDragging = false,
+    dragOffsetX = 0,
+    dragOffsetY = 0;
+  const header = win.querySelector('.ai-buddy-title');
+  header.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragOffsetX = e.clientX - win.offsetLeft;
+    dragOffsetY = e.clientY - win.offsetTop;
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', dragMove);
+  document.addEventListener('mouseup', dragEnd);
+
+  function dragMove(e) {
+    if (!isDragging) return;
+    let nx = e.clientX - dragOffsetX;
+    let ny = e.clientY - dragOffsetY;
+    // Clamp to window
+    if (nx < 0) nx = 0;
+    if (ny < 0) ny = 0;
+    if (nx + win.offsetWidth > window.innerWidth)
+      nx = window.innerWidth - win.offsetWidth;
+    if (ny + win.offsetHeight > window.innerHeight)
+      ny = window.innerHeight - win.offsetHeight;
+    win.style.left = `${nx}px`;
+    win.style.top = `${ny}px`;
+  }
+  function dragEnd() {
+    isDragging = false;
+    document.body.style.userSelect = '';
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+  }
+
   win.querySelector('#ai-buddy-improve-btn').onclick = () => {
     const text = win.querySelector('.ai-buddy-original-text').value;
     const tone = win.querySelector('.ai-buddy-tone').value;
-    // For now: just alert! Later: send to backend
     alert(
       JSON.stringify(
         {
@@ -258,6 +310,5 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
     );
     win.remove();
   };
-
   win.querySelector('#ai-buddy-close-btn').onclick = () => win.remove();
 }
