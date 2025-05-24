@@ -212,11 +212,12 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
   const rect = iconEl.getBoundingClientRect();
   const origText = inputEl.value || inputEl.innerText || '';
 
+  // Create window offscreen for measurement
   const win = document.createElement('div');
   win.id = 'ai-buddy-improve-window';
   win.className = 'ai-buddy-improve-window';
   win.style.position = 'fixed';
-  win.style.left = '-1000px'; // offscreen for measuring
+  win.style.left = '-1000px';
   win.style.top = '-1000px';
 
   win.innerHTML = `
@@ -238,14 +239,11 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
 
   document.body.appendChild(win);
 
-  // --- Now get real width/height ---
+  // --- Now get real width/height for positioning ---
   const winRect = win.getBoundingClientRect();
-
-  // Preferred position: to the right of icon, below
   let left = rect.right + 12;
   let top = rect.top;
 
-  // Adjust if overflow (right, bottom)
   if (left + winRect.width > window.innerWidth)
     left = window.innerWidth - winRect.width - 8;
   if (top + winRect.height > window.innerHeight)
@@ -256,7 +254,7 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
   win.style.left = `${left}px`;
   win.style.top = `${top}px`;
 
-  // DRAGGABLE LOGIC (same as before)
+  // --- Draggable window logic ---
   let isDragging = false,
     dragOffsetX = 0,
     dragOffsetY = 0;
@@ -274,7 +272,7 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
     if (!isDragging) return;
     let nx = e.clientX - dragOffsetX;
     let ny = e.clientY - dragOffsetY;
-    // Clamp to window
+    // Clamp to viewport
     if (nx < 0) nx = 0;
     if (ny < 0) ny = 0;
     if (nx + win.offsetWidth > window.innerWidth)
@@ -291,6 +289,18 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
     document.removeEventListener('mouseup', dragEnd);
   }
 
+  // --- Click outside to close ---
+  function handleClickOutside(event) {
+    if (!win.contains(event.target) && event.target !== iconEl) {
+      win.remove();
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }
+  setTimeout(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+  }, 0);
+
+  // --- Button logic ---
   win.querySelector('#ai-buddy-improve-btn').onclick = () => {
     const text = win.querySelector('.ai-buddy-original-text').value;
     const tone = win.querySelector('.ai-buddy-tone').value;
@@ -309,6 +319,10 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
       )
     );
     win.remove();
+    document.removeEventListener('mousedown', handleClickOutside);
   };
-  win.querySelector('#ai-buddy-close-btn').onclick = () => win.remove();
+  win.querySelector('#ai-buddy-close-btn').onclick = () => {
+    win.remove();
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
 }
