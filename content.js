@@ -5,13 +5,31 @@ document.addEventListener('mouseup', (e) => {
   if (e.target && tldrButton && e.target === tldrButton) {
     return;
   }
-  const selectedText = window.getSelection().toString().trim();
-  if (!selectedText || selectedText.length > 2500) {
-    removeTLDRButton();
-    return;
-  }
-  showTLDRButton(e.pageX, e.pageY);
+  setTimeout(() => {
+    // Let selection update before checking
+    const selectedText = window.getSelection().toString().trim();
+    if (!selectedText || selectedText.length > 2500) {
+      removeTLDRButton();
+      removeLoadingBox();
+      removeSummaryBox();
+      return;
+    }
+    showTLDRButton(e.pageX, e.pageY);
+  }, 0); // 0ms delay lets selection update before reading it!
 });
+document.addEventListener('selectionchange', () => {
+  const selectedText = window.getSelection().toString().trim();
+  if (!selectedText) {
+    removeTLDRButton();
+    removeLoadingBox();
+    removeSummaryBox();
+  }
+});
+// Add this helper function:
+function removeSummaryBox() {
+  const box = document.getElementById('tldr-buddy-summary-box');
+  if (box) box.remove();
+}
 
 function showTLDRButton(x, y) {
   removeTLDRButton();
