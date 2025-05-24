@@ -1,41 +1,41 @@
 // Inject the CSS once per page
 function injectAIBuddyCSS() {
-  if (document.getElementById('tldr-buddy-style')) return;
+  if (document.getElementById('ai-buddy-style')) return;
   const link = document.createElement('link');
-  link.id = 'tldr-buddy-style';
+  link.id = 'ai-buddy-style';
   link.rel = 'stylesheet';
   link.type = 'text/css';
-  link.href = chrome.runtime.getURL('tldr-buddy.css');
+  link.href = chrome.runtime.getURL('ai-buddy.css');
   document.head.appendChild(link);
 }
 injectAIBuddyCSS();
 
-let tldrButton;
+let aiButton;
 
 // --- Highlight to Summarize ---
 document.addEventListener('mouseup', (e) => {
   if (
-    (tldrButton && e.target === tldrButton) ||
-    (e.target.closest && e.target.closest('#tldr-buddy-summary-box'))
+    (aiButton && e.target === aiButton) ||
+    (e.target.closest && e.target.closest('#ai-buddy-summary-box'))
   ) {
     return;
   }
   setTimeout(() => {
     const selectedText = window.getSelection().toString().trim();
     if (!selectedText) {
-      removeTLDRButton();
+      removeAIButton();
       removeLoadingBox();
       removeSummaryBox();
       return;
     }
-    showTLDRButton(e.pageX, e.pageY);
+    showAIButton(e.pageX, e.pageY);
   }, 0);
 });
 
 document.addEventListener('selectionchange', () => {
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
-  const box = document.getElementById('tldr-buddy-summary-box');
+  const box = document.getElementById('ai-buddy-summary-box');
   function isNodeInBox(node, box) {
     while (node) {
       if (node === box) return true;
@@ -47,28 +47,28 @@ document.addEventListener('selectionchange', () => {
     !selectedText &&
     (!selection.anchorNode || !box || !isNodeInBox(selection.anchorNode, box))
   ) {
-    removeTLDRButton();
+    removeAIButton();
     removeLoadingBox();
     removeSummaryBox();
   }
 });
 
 function removeSummaryBox() {
-  const box = document.getElementById('tldr-buddy-summary-box');
+  const box = document.getElementById('ai-buddy-summary-box');
   if (box) box.remove();
 }
 
-function showTLDRButton(x, y) {
-  removeTLDRButton();
-  tldrButton = document.createElement('img');
-  tldrButton.src = chrome.runtime.getURL('icons/icon64.png');
-  tldrButton.className = 'tldr-buddy-icon';
-  tldrButton.style.left = `${x + 25}px`;
-  tldrButton.style.top = `${y + 25}px`;
-  tldrButton.addEventListener('mousedown', (event) => {
+function showAIButton(x, y) {
+  removeAIButton();
+  aiButton = document.createElement('img');
+  aiButton.src = chrome.runtime.getURL('icons/icon64.png');
+  aiButton.className = 'ai-buddy-icon';
+  aiButton.style.left = `${x + 25}px`;
+  aiButton.style.top = `${y + 25}px`;
+  aiButton.addEventListener('mousedown', (event) => {
     event.stopPropagation();
   });
-  tldrButton.addEventListener('click', () => {
+  aiButton.addEventListener('click', () => {
     const text = window.getSelection().toString();
     chrome.runtime.sendMessage({
       action: 'summarize',
@@ -80,16 +80,16 @@ function showTLDRButton(x, y) {
       title: document.title,
     });
     showLoadingBox(x, y);
-    removeTLDRButton();
+    removeAIButton();
   });
-  document.body.appendChild(tldrButton);
+  document.body.appendChild(aiButton);
 }
 
 function showLoadingBox(x, y) {
   removeLoadingBox();
   const loadingBox = document.createElement('div');
-  loadingBox.id = 'tldr-buddy-loading-box';
-  loadingBox.className = 'tldr-buddy-loading-box';
+  loadingBox.id = 'ai-buddy-loading-box';
+  loadingBox.className = 'ai-buddy-loading-box';
   loadingBox.textContent = 'Summarizing...';
   loadingBox.style.left = `${x}px`;
   loadingBox.style.top = `${y}px`;
@@ -97,14 +97,14 @@ function showLoadingBox(x, y) {
 }
 
 function removeLoadingBox() {
-  const box = document.getElementById('tldr-buddy-loading-box');
+  const box = document.getElementById('ai-buddy-loading-box');
   if (box) box.remove();
 }
 
-function removeTLDRButton() {
-  if (tldrButton) {
-    tldrButton.remove();
-    tldrButton = null;
+function removeAIButton() {
+  if (aiButton) {
+    aiButton.remove();
+    aiButton = null;
   }
 }
 
@@ -117,33 +117,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function showSummaryBox(summary, x, y) {
   summary = summary.trim();
-  const oldBox = document.getElementById('tldr-buddy-summary-box');
+  const oldBox = document.getElementById('ai-buddy-summary-box');
   if (oldBox) oldBox.remove();
   const box = document.createElement('div');
-  box.id = 'tldr-buddy-summary-box';
-  box.className = 'tldr-buddy-summary-box';
+  box.id = 'ai-buddy-summary-box';
+  box.className = 'ai-buddy-summary-box';
   box.style.left = `${x}px`;
   box.style.top = `${y + 20}px`;
   box.innerHTML = `
-    <div class="tldr-header">
-      <span class="tldr-title">AI Buddy</span>
-      <button id="tldr-close-btn" class="tldr-close-btn" title="Close">❌</button>
+    <div class="ai-header">
+      <span class="ai-title">AI Buddy</span>
+      <button id="ai-close-btn" class="ai-close-btn" title="Close">❌</button>
     </div>
-    <div id="tldr-summary-content" class="tldr-summary-content" style="direction:${
+    <div id="ai-summary-content" class="ai-summary-content" style="direction:${
       /[\u0590-\u05FF]/.test(summary) ? 'rtl' : 'ltr'
     };">${summary.replace(/</g, '&lt;')}</div>
-    <button id="tldr-copy-btn" class="tldr-copy-btn">📋 Copy</button>
+    <button id="ai-copy-btn" class="ai-copy-btn">📋 Copy</button>
   `;
   document.body.appendChild(box);
 
-  document.getElementById('tldr-close-btn').onclick = () => box.remove();
+  document.getElementById('ai-close-btn').onclick = () => box.remove();
 
-  document.getElementById('tldr-copy-btn').onclick = () => {
-    const text = document.getElementById('tldr-summary-content').innerText;
+  document.getElementById('ai-copy-btn').onclick = () => {
+    const text = document.getElementById('ai-summary-content').innerText;
     navigator.clipboard.writeText(text);
-    document.getElementById('tldr-copy-btn').textContent = '✅ Copied!';
+    document.getElementById('ai-copy-btn').textContent = '✅ Copied!';
     setTimeout(
-      () => (document.getElementById('tldr-copy-btn').textContent = '📋 Copy'),
+      () => (document.getElementById('ai-copy-btn').textContent = '📋 Copy'),
       1200
     );
   };

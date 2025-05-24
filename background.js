@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         y,
       });
     } catch (err) {
-      console.error('TL;DR Buddy error:', err);
+      console.error('AI Buddy error:', err);
       chrome.tabs.sendMessage(sender.tab.id, {
         action: 'showSummary',
         summary: 'Failed to summarize. Please try again.',
