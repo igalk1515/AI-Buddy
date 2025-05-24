@@ -1,14 +1,21 @@
 chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (message.action === 'summarize') {
-    const { text, x, y } = message;
+    const { text, x, y, url, hostname, title } = message;
 
     try {
+      const payload = {
+        prompt: text,
+        url,
+        hostname,
+        title,
+      };
+
       const response = await fetch(
         'https://lingering-hall-0999.igalk1515.workers.dev',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: text }),
+          body: JSON.stringify(payload),
         }
       );
 

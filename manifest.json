@@ -25,6 +25,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "tldr-buddy.css",
         "icons/icon16.png",
         "icons/icon48.png",
         "icons/icon64.png",
