@@ -1,5 +1,5 @@
 // Inject the CSS once per page
-function injectTLDRCSS() {
+function injectAIBuddyCSS() {
   if (document.getElementById('tldr-buddy-style')) return;
   const link = document.createElement('link');
   link.id = 'tldr-buddy-style';
@@ -8,12 +8,12 @@ function injectTLDRCSS() {
   link.href = chrome.runtime.getURL('tldr-buddy.css');
   document.head.appendChild(link);
 }
-injectTLDRCSS();
+injectAIBuddyCSS();
 
 let tldrButton;
 
+// --- Highlight to Summarize ---
 document.addEventListener('mouseup', (e) => {
-  // If click inside TLDR icon or inside summary box, do nothing
   if (
     (tldrButton && e.target === tldrButton) ||
     (e.target.closest && e.target.closest('#tldr-buddy-summary-box'))
@@ -36,8 +36,6 @@ document.addEventListener('selectionchange', () => {
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
   const box = document.getElementById('tldr-buddy-summary-box');
-
-  // Helper: checks if a node is inside the box
   function isNodeInBox(node, box) {
     while (node) {
       if (node === box) return true;
@@ -45,8 +43,6 @@ document.addEventListener('selectionchange', () => {
     }
     return false;
   }
-
-  // Only remove if selection is NOT inside summary box
   if (
     !selectedText &&
     (!selection.anchorNode || !box || !isNodeInBox(selection.anchorNode, box))
@@ -64,7 +60,6 @@ function removeSummaryBox() {
 
 function showTLDRButton(x, y) {
   removeTLDRButton();
-
   tldrButton = document.createElement('img');
   tldrButton.src = chrome.runtime.getURL('icons/icon64.png');
   tldrButton.className = 'tldr-buddy-icon';
@@ -87,7 +82,6 @@ function showTLDRButton(x, y) {
     showLoadingBox(x, y);
     removeTLDRButton();
   });
-
   document.body.appendChild(tldrButton);
 }
 
@@ -125,7 +119,6 @@ function showSummaryBox(summary, x, y) {
   summary = summary.trim();
   const oldBox = document.getElementById('tldr-buddy-summary-box');
   if (oldBox) oldBox.remove();
-
   const box = document.createElement('div');
   box.id = 'tldr-buddy-summary-box';
   box.className = 'tldr-buddy-summary-box';
@@ -133,17 +126,14 @@ function showSummaryBox(summary, x, y) {
   box.style.top = `${y + 20}px`;
   box.innerHTML = `
     <div class="tldr-header">
-      <span class="tldr-title">TL;DR Buddy</span>
+      <span class="tldr-title">AI Buddy</span>
       <button id="tldr-close-btn" class="tldr-close-btn" title="Close">❌</button>
     </div>
     <div id="tldr-summary-content" class="tldr-summary-content" style="direction:${
       /[\u0590-\u05FF]/.test(summary) ? 'rtl' : 'ltr'
-    };">${summary.replace(/</g, '&lt;')}
-      </div>
-
+    };">${summary.replace(/</g, '&lt;')}</div>
     <button id="tldr-copy-btn" class="tldr-copy-btn">📋 Copy</button>
   `;
-
   document.body.appendChild(box);
 
   document.getElementById('tldr-close-btn').onclick = () => box.remove();
@@ -157,4 +147,85 @@ function showSummaryBox(summary, x, y) {
       1200
     );
   };
+}
+
+// --- AI Buddy for Writing Improvement in Text Fields ---
+let aiBuddyInputIcon = null;
+let lastInputElement = null;
+
+document.addEventListener('focusin', (e) => {
+  const el = e.target;
+  if (
+    el.tagName === 'TEXTAREA' ||
+    (el.tagName === 'INPUT' && el.type === 'text') ||
+    el.isContentEditable
+  ) {
+    showAIBuddyInputIcon(el);
+  } else {
+    removeAIBuddyInputIcon();
+  }
+});
+
+document.addEventListener('mousedown', (e) => {
+  if (
+    aiBuddyInputIcon &&
+    !aiBuddyInputIcon.contains(e.target) &&
+    lastInputElement &&
+    e.target !== lastInputElement
+  ) {
+    removeAIBuddyInputIcon();
+  }
+});
+
+function showAIBuddyInputIcon(inputEl) {
+  removeAIBuddyInputIcon();
+  lastInputElement = inputEl;
+  const rect = inputEl.getBoundingClientRect();
+  aiBuddyInputIcon = document.createElement('img');
+  aiBuddyInputIcon.src = chrome.runtime.getURL('icons/icon64.png');
+  aiBuddyInputIcon.alt = 'AI Buddy';
+  aiBuddyInputIcon.title = 'Improve my writing';
+  aiBuddyInputIcon.className = 'ai-buddy-input-icon';
+  aiBuddyInputIcon.style.left = `${rect.right - 32}px`;
+  aiBuddyInputIcon.style.top = `${rect.bottom - 32}px`;
+
+  aiBuddyInputIcon.onclick = (ev) => {
+    ev.stopPropagation();
+    showAIBuddyImproveWindow(inputEl, aiBuddyInputIcon);
+  };
+
+  document.body.appendChild(aiBuddyInputIcon);
+}
+
+function removeAIBuddyInputIcon() {
+  if (aiBuddyInputIcon) {
+    aiBuddyInputIcon.remove();
+    aiBuddyInputIcon = null;
+  }
+  lastInputElement = null;
+}
+
+function showAIBuddyImproveWindow(inputEl, iconEl) {
+  // Remove previous window
+  const old = document.getElementById('ai-buddy-improve-window');
+  if (old) old.remove();
+  const rect = iconEl.getBoundingClientRect();
+  const win = document.createElement('div');
+  win.id = 'ai-buddy-improve-window';
+  win.className = 'ai-buddy-improve-window';
+  win.style.left = `${rect.left - 10}px`;
+  win.style.top = `${rect.top - 60}px`;
+  win.innerHTML = `
+    <div class="ai-buddy-title">AI Buddy</div>
+    <button id="ai-buddy-improve-btn" class="ai-buddy-improve-btn">✍️ Improve my writing</button>
+    <button id="ai-buddy-close-btn" class="ai-buddy-close-btn">❌</button>
+  `;
+  document.body.appendChild(win);
+
+  win.querySelector('#ai-buddy-improve-btn').onclick = () => {
+    const text = inputEl.value || inputEl.innerText || '';
+    alert('Would send for improvement:\n\n' + text);
+    // Replace alert with actual backend logic if needed
+  };
+  win.querySelector('#ai-buddy-close-btn').onclick = () => win.remove();
 }

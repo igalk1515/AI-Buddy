@@ -78,3 +78,55 @@
   margin-top: 5px;
   float: right;
 }
+
+/* AI Buddy input icon */
+.ai-buddy-input-icon {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  z-index: 2147483647;
+  cursor: pointer;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  padding: 2px;
+  /* left/top are set dynamically via JS */
+}
+
+/* AI Buddy improve window */
+#ai-buddy-improve-window {
+  position: fixed;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  box-shadow: 0 3px 18px 0 rgba(0, 0, 0, 0.13);
+  z-index: 2147483647;
+  padding: 12px 14px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  /* left/top are set dynamically via JS */
+}
+
+#ai-buddy-improve-window .ai-buddy-title {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+#ai-buddy-improve-window .ai-buddy-improve-btn {
+  font-size: 14px;
+  padding: 6px 16px;
+  border-radius: 5px;
+  border: 1px solid #09f;
+  background: #eaf6ff;
+  cursor: pointer;
+}
+
+#ai-buddy-improve-window .ai-buddy-close-btn {
+  float: right;
+  font-size: 14px;
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+}
