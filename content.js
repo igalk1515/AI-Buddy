@@ -22,6 +22,7 @@ document.addEventListener('mouseup', (e) => {
   }
   setTimeout(() => {
     const selectedText = window.getSelection().toString().trim();
+    console.log(`Selected text: "${selectedText}"`);
     if (!selectedText) {
       removeAIButton();
       removeLoadingBox();
@@ -70,6 +71,7 @@ function showAIButton(x, y) {
   });
   aiButton.addEventListener('click', () => {
     const text = window.getSelection().toString();
+    console.log('[AI Buddy] AI icon clicked. Selection at click:', text);
     chrome.runtime.sendMessage({
       action: 'summarize',
       text,
@@ -112,6 +114,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'showSummary') {
     removeLoadingBox();
     showSummaryBox(message.summary, message.x, message.y);
+  } else if (message.action === 'improvedText') {
+    // Find last focused element and replace value/text
+    if (lastInputElement) {
+      if ('value' in lastInputElement) {
+        lastInputElement.value = message.improved;
+        // For frameworks, you may need to fire an input/change event here!
+        lastInputElement.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (lastInputElement.isContentEditable) {
+        lastInputElement.innerText = message.improved;
+      }
+    }
+    // Optionally: show a toast or brief notification!
   }
 });
 
@@ -231,30 +245,33 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
       <option value="concise">✂️ Concise</option>
       <option value="detailed">📚 Detailed</option>
     </select>
-    <div style="margin-top:10px;">
+    <div id="ai-buddy-action-row" style="margin-top:10px;">
       <button id="ai-buddy-improve-btn">✍️ Improve</button>
       <button id="ai-buddy-close-btn">❌ Cancel</button>
     </div>
+    <div id="ai-buddy-loading" style="display:none;margin-top:10px;text-align:center;">
+      <span class="ai-buddy-spinner"></span> Improving...
+    </div>
+    <div id="ai-buddy-improved-result" style="display:none;margin-top:10px;"></div>
   `;
 
   document.body.appendChild(win);
+  positionAIBuddyWindow(win, rect);
 
-  // --- Now get real width/height for positioning ---
+  // --- Position
   const winRect = win.getBoundingClientRect();
   let left = rect.right + 12;
   let top = rect.top;
-
   if (left + winRect.width > window.innerWidth)
     left = window.innerWidth - winRect.width - 8;
   if (top + winRect.height > window.innerHeight)
     top = window.innerHeight - winRect.height - 8;
   if (left < 0) left = 8;
   if (top < 0) top = 8;
-
   win.style.left = `${left}px`;
   win.style.top = `${top}px`;
 
-  // --- Draggable window logic ---
+  // --- Draggable logic
   let isDragging = false,
     dragOffsetX = 0,
     dragOffsetY = 0;
@@ -272,7 +289,6 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
     if (!isDragging) return;
     let nx = e.clientX - dragOffsetX;
     let ny = e.clientY - dragOffsetY;
-    // Clamp to viewport
     if (nx < 0) nx = 0;
     if (ny < 0) ny = 0;
     if (nx + win.offsetWidth > window.innerWidth)
@@ -289,7 +305,7 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
     document.removeEventListener('mouseup', dragEnd);
   }
 
-  // --- Click outside to close ---
+  // --- Click outside to close
   function handleClickOutside(event) {
     if (!win.contains(event.target) && event.target !== iconEl) {
       win.remove();
@@ -302,27 +318,99 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
 
   // --- Button logic ---
   win.querySelector('#ai-buddy-improve-btn').onclick = () => {
+    win.querySelector('#ai-buddy-improve-btn').disabled = true;
+    win.querySelector('#ai-buddy-close-btn').disabled = true;
+    win.querySelector('#ai-buddy-loading').style.display = '';
+    win.querySelector('#ai-buddy-action-row').style.opacity = 0.5;
+
     const text = win.querySelector('.ai-buddy-original-text').value;
     const tone = win.querySelector('.ai-buddy-tone').value;
-    alert(
-      JSON.stringify(
-        {
-          action: 'improve',
-          text,
-          tone,
-          url: window.location.href,
-          hostname: window.location.hostname,
-          title: document.title,
-        },
-        null,
-        2
-      )
-    );
-    win.remove();
-    document.removeEventListener('mousedown', handleClickOutside);
+
+    chrome.runtime.sendMessage({
+      action: 'improve',
+      text,
+      tone,
+      url: window.location.href,
+      hostname: window.location.hostname,
+      title: document.title,
+    });
+
+    setTimeout(() => positionAIBuddyWindow(win, rect), 10); // In case window size changes
   };
+
   win.querySelector('#ai-buddy-close-btn').onclick = () => {
     win.remove();
     document.removeEventListener('mousedown', handleClickOutside);
   };
+
+  // --- Listen for improved text event ---
+  chrome.runtime.onMessage.addListener(function improvedListener(
+    message,
+    sender,
+    sendResponse
+  ) {
+    if (message.action === 'improvedText') {
+      const improvedWin = document.getElementById('ai-buddy-improve-window');
+      if (!improvedWin) return;
+      improvedWin.querySelector('#ai-buddy-loading').style.display = 'none';
+
+      const improvedDiv = improvedWin.querySelector(
+        '#ai-buddy-improved-result'
+      );
+      improvedDiv.style.display = '';
+      improvedDiv.innerHTML = `
+        <div class="ai-buddy-improved-label">Improved version:</div>
+        <textarea class="ai-buddy-improved-text" style="width:99%;" rows="4" readonly>${message.improved}</textarea>
+        <div style="margin-top:8px;">
+          <button id="ai-buddy-insert-btn">⬇️ Put in input</button>
+          <button id="ai-buddy-copy-btn">📋 Copy</button>
+          <button id="ai-buddy-close-btn2">❌ Close</button>
+        </div>
+      `;
+
+      setTimeout(() => positionAIBuddyWindow(improvedWin, rect), 10);
+
+      improvedDiv.querySelector('#ai-buddy-insert-btn').onclick = () => {
+        if ('value' in inputEl) {
+          inputEl.value = message.improved;
+          inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (inputEl.isContentEditable) {
+          inputEl.innerText = message.improved;
+        }
+        improvedWin.remove();
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+      improvedDiv.querySelector('#ai-buddy-copy-btn').onclick = () => {
+        navigator.clipboard.writeText(message.improved);
+        improvedDiv.querySelector('#ai-buddy-copy-btn').textContent =
+          '✅ Copied!';
+        setTimeout(() => {
+          improvedDiv.querySelector('#ai-buddy-copy-btn').textContent =
+            '📋 Copy';
+        }, 1200);
+      };
+      improvedDiv.querySelector('#ai-buddy-close-btn2').onclick = () => {
+        improvedWin.remove();
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+
+      chrome.runtime.onMessage.removeListener(improvedListener);
+    }
+  });
+}
+
+function positionAIBuddyWindow(win, anchorRect) {
+  const winRect = win.getBoundingClientRect();
+  let left = anchorRect.right + 12;
+  let top = anchorRect.top;
+
+  if (left + winRect.width > window.innerWidth)
+    left = window.innerWidth - winRect.width - 8;
+  if (top + winRect.height > window.innerHeight)
+    top = window.innerHeight - winRect.height - 8;
+  if (left < 0) left = 8;
+  if (top < 0) top = 8;
+
+  win.style.left = `${left}px`;
+  win.style.top = `${top}px`;
 }
