@@ -5,7 +5,7 @@
   cursor: pointer;
   z-index: 9999999;
   background: white;
-  border-radius: 25px;
+  border-radius: 15px;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -82,8 +82,8 @@
 /* AI Buddy input icon */
 .ai-buddy-input-icon {
   position: fixed;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   z-index: 2147483647;
   cursor: pointer;
   background: white;

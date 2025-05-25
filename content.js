@@ -200,8 +200,8 @@ function showAIBuddyInputIcon(inputEl) {
   aiBuddyInputIcon.alt = 'AI Buddy';
   aiBuddyInputIcon.title = 'Improve my writing';
   aiBuddyInputIcon.className = 'ai-buddy-input-icon';
-  aiBuddyInputIcon.style.left = `${rect.left - 32}px`;
-  aiBuddyInputIcon.style.top = `${rect.bottom - 32}px`;
+  aiBuddyInputIcon.style.left = `${rect.left - 45}px`;
+  aiBuddyInputIcon.style.top = `${rect.bottom - 40}px`;
 
   aiBuddyInputIcon.onclick = (ev) => {
     ev.stopPropagation();
@@ -359,36 +359,48 @@ function showAIBuddyImproveWindow(inputEl, iconEl) {
       );
       improvedDiv.style.display = '';
       improvedDiv.innerHTML = `
-        <div class="ai-buddy-improved-label">Improved version:</div>
-        <textarea class="ai-buddy-improved-text" style="width:99%;" rows="4" readonly>${message.improved}</textarea>
-        <div style="margin-top:8px;">
-          <button id="ai-buddy-insert-btn">⬇️ Put in input</button>
-          <button id="ai-buddy-copy-btn">📋 Copy</button>
-          <button id="ai-buddy-close-btn2">❌ Close</button>
-        </div>
-      `;
+      <div class="ai-buddy-improved-label">Improved version:</div>
+      <textarea class="ai-buddy-improved-text" style="width:99%;" rows="4">${message.improved}</textarea>
+      <div style="margin-top:8px;">
+        <button id="ai-buddy-insert-btn">⬇️ Put in input</button>
+        <button id="ai-buddy-copy-btn">📋 Copy</button>
+        <button id="ai-buddy-close-btn2">❌ Close</button>
+      </div>
+    `;
 
       setTimeout(() => positionAIBuddyWindow(improvedWin, rect), 10);
 
+      // "Insert" puts current improved text into the original input, does not close window
+      // "Insert" puts current improved text into the original input and closes the window
       improvedDiv.querySelector('#ai-buddy-insert-btn').onclick = () => {
+        const improvedText = improvedDiv.querySelector(
+          '.ai-buddy-improved-text'
+        ).value;
         if ('value' in inputEl) {
-          inputEl.value = message.improved;
+          inputEl.value = improvedText;
           inputEl.dispatchEvent(new Event('input', { bubbles: true }));
         } else if (inputEl.isContentEditable) {
-          inputEl.innerText = message.improved;
+          inputEl.innerText = improvedText;
         }
         improvedWin.remove();
         document.removeEventListener('mousedown', handleClickOutside);
       };
+
+      // Copy button (copies, gives feedback, and closes the window)
       improvedDiv.querySelector('#ai-buddy-copy-btn').onclick = () => {
-        navigator.clipboard.writeText(message.improved);
+        const improvedText = improvedDiv.querySelector(
+          '.ai-buddy-improved-text'
+        ).value;
+        navigator.clipboard.writeText(improvedText);
         improvedDiv.querySelector('#ai-buddy-copy-btn').textContent =
           '✅ Copied!';
         setTimeout(() => {
-          improvedDiv.querySelector('#ai-buddy-copy-btn').textContent =
-            '📋 Copy';
-        }, 1200);
+          improvedWin.remove();
+          document.removeEventListener('mousedown', handleClickOutside);
+        }, 500); // brief feedback before closing
       };
+
+      // Close button (no changes here)
       improvedDiv.querySelector('#ai-buddy-close-btn2').onclick = () => {
         improvedWin.remove();
         document.removeEventListener('mousedown', handleClickOutside);
